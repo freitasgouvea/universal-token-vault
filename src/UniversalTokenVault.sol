@@ -8,7 +8,7 @@ import {ReentrancyGuard} from "../lib/openzeppelin-contracts/contracts/utils/Ree
 
 /**
 * @title UniversalTokenVault contract
-* @notice This contract holds the coins and tokens deposited by the users
+* @notice This contract holds the coins and regsiteredTokens deposited by the users
 */
 contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
     bool public initialized;
@@ -21,7 +21,7 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
         uint8 idParamIndex;
     }
 
-    mapping(address => Token) public tokens;
+    mapping(address => Token) public regsiteredTokens;
     mapping(address => mapping(address => uint256)) public userTokenBalances;
     mapping(address => mapping(uint256 => address)) public userOwnerOf;
     mapping(address => mapping(uint256 => mapping(address => uint256))) public userOwnerOfBalance;
@@ -66,21 +66,21 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
         uint8 _idParameterIndex
     ) external onlyOwner {
         require(_token != address(0), "Vault: token address cannot be zero");
-        require(!tokens[_token].active, "Vault: token already active");
+        require(!regsiteredTokens[_token].active, "Vault: token already active");
 
-        tokens[_token] = (Token(true, _hasAmount, _amountParameterIndex, _hasId, _idParameterIndex));
+        regsiteredTokens[_token] = (Token(true, _hasAmount, _amountParameterIndex, _hasId, _idParameterIndex));
         
         emit TokenRegistered(_token);
     }
 
     /**
-    * @notice Deposit tokens into the vault
+    * @notice Deposit regsiteredTokens into the vault
     * @dev This function can only be called when the vault is not paused
     * @param _token The address of the token to deposit
     * @param _data The encoded function call data
     */
     function deposit(address _token, bytes calldata _data) external whenNotPaused nonReentrant {
-        require(tokens[_token].active, "Vault: token not active");
+        require(regsiteredTokens[_token].active, "Vault: token not active");
         require(_token != address(0), "Vault: token address cannot be zero");
         require(_data.length >= 4, "Vault: data must contain a function selector");
 
@@ -88,25 +88,25 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
         require(success, _getRevertMsg(returnData));
 
 
-        if (tokens[_token].hasAmount && !tokens[_token].hasId) {
-            uint256 amount = _decodeAmount(_data, tokens[_token].amountParamIndex);
+        if (regsiteredTokens[_token].hasAmount && !regsiteredTokens[_token].hasId) {
+            uint256 amount = _decodeAmount(_data, regsiteredTokens[_token].amountParamIndex);
 
             userTokenBalances[_token][msg.sender] += amount;
 
             emit Deposit(msg.sender, _token, _data, amount, 0);
         }
 
-        if (!tokens[_token].hasAmount && tokens[_token].hasId) {
-            uint256 id = _decodeId(_data, tokens[_token].idParamIndex);
+        if (!regsiteredTokens[_token].hasAmount && regsiteredTokens[_token].hasId) {
+            uint256 id = _decodeId(_data, regsiteredTokens[_token].idParamIndex);
 
             userOwnerOf[_token][id] = msg.sender;
 
             emit Deposit(msg.sender, _token, _data, 0, id);
         }
 
-        if (tokens[_token].hasAmount && tokens[_token].hasId) {
-            uint256 amount = _decodeAmount(_data, tokens[_token].amountParamIndex);
-            uint256 id = _decodeId(_data, tokens[_token].idParamIndex);
+        if (regsiteredTokens[_token].hasAmount && regsiteredTokens[_token].hasId) {
+            uint256 amount = _decodeAmount(_data, regsiteredTokens[_token].amountParamIndex);
+            uint256 id = _decodeId(_data, regsiteredTokens[_token].idParamIndex);
 
             userTokenBalances[_token][msg.sender] += amount;
             userOwnerOfBalance[_token][id][msg.sender] += amount;
