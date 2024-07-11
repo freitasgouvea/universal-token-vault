@@ -16,9 +16,13 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
     struct Token {
         bool active;
         bool hasAmount;
-        uint8 amountParamIndex;
         bool hasId;
-        uint8 idParamIndex;
+        bytes4 depositFunctionSignature;
+        bytes4 withdrawFunctionSignature;
+        uint8 amountParamIndexForDeposit;
+        uint8 amountParamIndexForWithdraw;
+        uint8 idParamIndexForDeposit;
+        uint8 idParamIndexForWithdraw;
     }
 
     mapping(address => Token) public registeredTokens;
@@ -58,21 +62,40 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
     * @notice Activate a token in the vault
     * @param _token The address of the token to be activated
     * @param _hasAmount If the token has an amount parameter
-    * @param _amountParameterIndex The index of the amount parameter
     * @param _hasId If the token has an ID parameter
-    * @param _idParameterIndex The index of the ID parameter
+    * @param _depositFunctionSignature The function signature for deposit
+    * @param _withdrawFunctionSignature The function signature for withdraw
+    * @param _amountParamIndexForDeposit The index of the amount parameter for deposit
+    * @param _idParamIndexForDeposit The index of the ID parameter for deposit
+    * @param _amountParamIndexForWithdraw The index of the amount parameter for withdraw
+    * @param _idParamIndexForWithdraw The index of the ID parameter for withdraw
     */
     function activateToken(
         address _token, 
         bool _hasAmount, 
-        uint8 _amountParameterIndex, 
         bool _hasId, 
-        uint8 _idParameterIndex
+        bytes4 _depositFunctionSignature,
+        bytes4 _withdrawFunctionSignature,
+        uint8 _amountParamIndexForDeposit,
+        uint8 _idParamIndexForDeposit,
+        uint8 _amountParamIndexForWithdraw,
+        uint8 _idParamIndexForWithdraw
     ) external onlyOwner {
         require(_token != address(0), "Vault: token address cannot be zero");
         require(!registeredTokens[_token].active, "Vault: token already active");
+        require(_hasAmount || _hasId, "Vault: invalid token type");
 
-        registeredTokens[_token] = Token(true, _hasAmount, _amountParameterIndex, _hasId, _idParameterIndex);
+        registeredTokens[_token] = Token(
+            true, 
+            _hasAmount, 
+            _hasId,
+            _depositFunctionSignature,
+            _withdrawFunctionSignature,
+            _amountParamIndexForDeposit,
+            _idParamIndexForDeposit,
+            _amountParamIndexForWithdraw,
+            _idParamIndexForWithdraw
+        );
         
         emit TokenRegistered(_token);
     }
@@ -100,11 +123,12 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
         require(_token != address(0), "Vault: token address cannot be zero");
         require(_data.length >= 4, "Vault: data must contain a function selector");
 
+        // todo: verify function signature
         (bool success, bytes memory returnData) = _token.call(_data);
         require(success, _getRevertMsg(returnData));
 
         if (registeredTokens[_token].hasAmount && !registeredTokens[_token].hasId) {
-            uint256 amount = _decodeAmount(_data, registeredTokens[_token].amountParamIndex);
+            uint256 amount = _decodeAmount(_data, registeredTokens[_token].amountParamIndexForDeposit);
 
             userTokenBalances[_token][msg.sender] += amount;
 
@@ -112,7 +136,7 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
         }
 
         if (!registeredTokens[_token].hasAmount && registeredTokens[_token].hasId) {
-            uint256 id = _decodeId(_data, registeredTokens[_token].idParamIndex);
+            uint256 id = _decodeId(_data, registeredTokens[_token].idParamIndexForDeposit);
 
             userOwnerOf[_token][id] = msg.sender;
 
@@ -120,8 +144,8 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
         }
 
         if (registeredTokens[_token].hasAmount && registeredTokens[_token].hasId) {
-            uint256 amount = _decodeAmount(_data, registeredTokens[_token].amountParamIndex);
-            uint256 id = _decodeId(_data, registeredTokens[_token].idParamIndex);
+            uint256 amount = _decodeAmount(_data, registeredTokens[_token].amountParamIndexForDeposit);
+            uint256 id = _decodeId(_data, registeredTokens[_token].idParamIndexForDeposit);
 
             userTokenBalances[_token][msg.sender] += amount;
             userOwnerOfBalance[_token][id][msg.sender] += amount;
@@ -146,14 +170,14 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
         uint256 id = 0;
 
         if (registeredTokens[_token].hasAmount && !registeredTokens[_token].hasId) {
-            amount = _decodeAmount(_data, registeredTokens[_token].amountParamIndex);
+            amount = _decodeAmount(_data, registeredTokens[_token].amountParamIndexForWithdraw);
             require(userTokenBalances[_token][msg.sender] >= amount, "Vault: insufficient balance");
 
             userTokenBalances[_token][msg.sender] -= amount;
         }
 
         if (!registeredTokens[_token].hasAmount && registeredTokens[_token].hasId) {
-            id = _decodeId(_data, registeredTokens[_token].idParamIndex);
+            id = _decodeId(_data, registeredTokens[_token].idParamIndexForWithdraw);
             require(userOwnerOf[_token][id] == msg.sender, "Vault: not the owner of the token ID");
 
             userOwnerOf[_token][id] = address(0);
@@ -165,6 +189,7 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
             userOwnerOfBalance[_token][id][msg.sender] -= amount;
         }
 
+        // todo: verify function signature
         (bool success, bytes memory returnData) = _token.call(_data);
         require(success, _getRevertMsg(returnData));
 
