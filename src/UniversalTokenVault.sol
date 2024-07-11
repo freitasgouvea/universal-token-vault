@@ -8,7 +8,7 @@ import {ReentrancyGuard} from "../lib/openzeppelin-contracts/contracts/utils/Ree
 
 /**
 * @title UniversalTokenVault contract
-* @notice This contract holds the coins and regsiteredTokens deposited by the users
+* @notice This contract holds the coins and registered tokens deposited by the users
 */
 contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
     bool public initialized;
@@ -21,14 +21,14 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
         uint8 idParamIndex;
     }
 
-    mapping(address => Token) public regsiteredTokens;
+    mapping(address => Token) public registeredTokens;
     mapping(address => mapping(address => uint256)) public userTokenBalances;
     mapping(address => mapping(uint256 => address)) public userOwnerOf;
     mapping(address => mapping(uint256 => mapping(address => uint256))) public userOwnerOfBalance;
 
     event Initialized();
     event TokenRegistered(address indexed token);
-    event TokenUnregistired(address indexed token);
+    event TokenUnregistered(address indexed token);
     event Deposit(address indexed from, address indexed token, bytes data, uint256 amount, uint256 id);
     event Withdraw(address indexed to, address indexed token, bytes data, uint256 amount, uint256 id);
 
@@ -55,10 +55,14 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
     }
 
     /**
-    * @notice Active a token in the vault
-    * @param _token The address of the token to be active
+    * @notice Activate a token in the vault
+    * @param _token The address of the token to be activated
+    * @param _hasAmount If the token has an amount parameter
+    * @param _amountParameterIndex The index of the amount parameter
+    * @param _hasId If the token has an ID parameter
+    * @param _idParameterIndex The index of the ID parameter
     */
-    function activeToken(
+    function activateToken(
         address _token, 
         bool _hasAmount, 
         uint8 _amountParameterIndex, 
@@ -66,47 +70,58 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
         uint8 _idParameterIndex
     ) external onlyOwner {
         require(_token != address(0), "Vault: token address cannot be zero");
-        require(!regsiteredTokens[_token].active, "Vault: token already active");
+        require(!registeredTokens[_token].active, "Vault: token already active");
 
-        regsiteredTokens[_token] = (Token(true, _hasAmount, _amountParameterIndex, _hasId, _idParameterIndex));
+        registeredTokens[_token] = Token(true, _hasAmount, _amountParameterIndex, _hasId, _idParameterIndex);
         
         emit TokenRegistered(_token);
     }
 
     /**
-    * @notice Deposit regsiteredTokens into the vault
+    * @notice Deactivate a token in the vault
+    * @param _token The address of the token to be deactivated
+    */
+    function deactivateToken(address _token) external onlyOwner {
+        require(registeredTokens[_token].active, "Vault: token not active");
+
+        registeredTokens[_token].active = false;
+
+        emit TokenUnregistered(_token);
+    }
+
+    /**
+    * @notice Deposit registered tokens into the vault
     * @dev This function can only be called when the vault is not paused
     * @param _token The address of the token to deposit
     * @param _data The encoded function call data
     */
     function deposit(address _token, bytes calldata _data) external whenNotPaused nonReentrant {
-        require(regsiteredTokens[_token].active, "Vault: token not active");
+        require(registeredTokens[_token].active, "Vault: token not active");
         require(_token != address(0), "Vault: token address cannot be zero");
         require(_data.length >= 4, "Vault: data must contain a function selector");
 
         (bool success, bytes memory returnData) = _token.call(_data);
         require(success, _getRevertMsg(returnData));
 
-
-        if (regsiteredTokens[_token].hasAmount && !regsiteredTokens[_token].hasId) {
-            uint256 amount = _decodeAmount(_data, regsiteredTokens[_token].amountParamIndex);
+        if (registeredTokens[_token].hasAmount && !registeredTokens[_token].hasId) {
+            uint256 amount = _decodeAmount(_data, registeredTokens[_token].amountParamIndex);
 
             userTokenBalances[_token][msg.sender] += amount;
 
             emit Deposit(msg.sender, _token, _data, amount, 0);
         }
 
-        if (!regsiteredTokens[_token].hasAmount && regsiteredTokens[_token].hasId) {
-            uint256 id = _decodeId(_data, regsiteredTokens[_token].idParamIndex);
+        if (!registeredTokens[_token].hasAmount && registeredTokens[_token].hasId) {
+            uint256 id = _decodeId(_data, registeredTokens[_token].idParamIndex);
 
             userOwnerOf[_token][id] = msg.sender;
 
             emit Deposit(msg.sender, _token, _data, 0, id);
         }
 
-        if (regsiteredTokens[_token].hasAmount && regsiteredTokens[_token].hasId) {
-            uint256 amount = _decodeAmount(_data, regsiteredTokens[_token].amountParamIndex);
-            uint256 id = _decodeId(_data, regsiteredTokens[_token].idParamIndex);
+        if (registeredTokens[_token].hasAmount && registeredTokens[_token].hasId) {
+            uint256 amount = _decodeAmount(_data, registeredTokens[_token].amountParamIndex);
+            uint256 id = _decodeId(_data, registeredTokens[_token].idParamIndex);
 
             userTokenBalances[_token][msg.sender] += amount;
             userOwnerOfBalance[_token][id][msg.sender] += amount;
@@ -116,49 +131,115 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
     }
 
     /**
-    * @notice Helper function to decode the amount from the function call data
+    * @notice Withdraw tokens from the vault
+    * @dev This function can only be called by the owner
+    * @dev This function can only be called when the vault is not paused
+    * @param _token The address of the token to withdraw
     * @param _data The encoded function call data
-    * @param _idParameterIndex The index of amount param
-    * @return The decoded amount
     */
-    function _decodeId(bytes calldata _data, uint8 _idParameterIndex) private pure returns (uint256) {
-        require(_idParameterIndex < 6, "Vault: parameter index out of range");
+    function withdraw(address _token, bytes calldata _data) external onlyOwner whenNotPaused nonReentrant {
+        require(registeredTokens[_token].active, "Vault: token not active");
+        require(_token != address(0), "Vault: token address cannot be zero");
+        require(_data.length >= 4, "Vault: data must contain a function selector");
 
-        bytes4 selector;
-        uint256 amount;
+        uint256 amount = 0;
+        uint256 id = 0;
 
-        assembly {
-            selector := calldataload(_data.offset)
-            amount := calldataload(add(_data.offset, add(0x04, mul(_idParameterIndex, 0x20))))
+        if (registeredTokens[_token].hasAmount && !registeredTokens[_token].hasId) {
+            amount = _decodeAmount(_data, registeredTokens[_token].amountParamIndex);
+            require(userTokenBalances[_token][msg.sender] >= amount, "Vault: insufficient balance");
+
+            userTokenBalances[_token][msg.sender] -= amount;
         }
 
-        // Validate the selector if needed
-        // require(selector == expectedSelector, "Vault: invalid function selector");
+        if (!registeredTokens[_token].hasAmount && registeredTokens[_token].hasId) {
+            id = _decodeId(_data, registeredTokens[_token].idParamIndex);
+            require(userOwnerOf[_token][id] == msg.sender, "Vault: not the owner of the token ID");
 
-        return amount;
+            userOwnerOf[_token][id] = address(0);
+        }
+
+        if (registeredTokens[_token].hasAmount && registeredTokens[_token].hasId) {
+            require(userOwnerOfBalance[_token][id][msg.sender] >= amount, "Vault: insufficient balance for token ID");
+
+            userOwnerOfBalance[_token][id][msg.sender] -= amount;
+        }
+
+        (bool success, bytes memory returnData) = _token.call(_data);
+        require(success, _getRevertMsg(returnData));
+
+        emit Withdraw(msg.sender, _token, _data, amount, id);
+    }
+
+    /**
+    * @notice Get the balance of a specific token for a specific user
+    * @param _user The address of the user
+    * @param _token The address of the token
+    * @return The balance of the token for the user
+    */
+    function getUserTokenBalance(address _user, address _token) external view returns (uint256) {
+        return userTokenBalances[_token][_user];
+    }
+
+    /**
+    * @notice Get the owner of a specific token ID for a specific token
+    * @param _token The address of the token
+    * @param _id The ID of the token
+    * @return The owner address of the token ID
+    */
+    function getOwnerOfTokenId(address _token, uint256 _id) external view returns (address) {
+        return userOwnerOf[_token][_id];
+    }
+
+    /**
+    * @notice Get the balance of a specific token ID for a specific user
+    * @param _user The address of the user
+    * @param _token The address of the token
+    * @param _id The ID of the token
+    * @return The balance of the token ID for the user
+    */
+    function getUserBalanceOfTokenId(address _user, address _token, uint256 _id) external view returns (uint256) {
+        return userOwnerOfBalance[_token][_id][_user];
     }
 
     /**
     * @notice Helper function to decode the amount from the function call data
     * @param _data The encoded function call data
-    * @param _amountParameterIndex The index of amount param
+    * @param _paramIndex The index of the amount parameter
     * @return The decoded amount
     */
-    function _decodeAmount(bytes calldata _data, uint8 _amountParameterIndex) private pure returns (uint256) {
-        require(_amountParameterIndex < 6, "Vault: parameter index out of range");
+    function _decodeAmount(bytes calldata _data, uint8 _paramIndex) private pure returns (uint256) {
+        require(_paramIndex < 6, "Vault: parameter index out of range");
     
         bytes4 selector;
         uint256 amount;
     
         assembly {
             selector := calldataload(_data.offset)
-            amount := calldataload(add(_data.offset, add(0x04, mul(_amountParameterIndex, 0x20))))
+            amount := calldataload(add(_data.offset, add(0x04, mul(_paramIndex, 0x20))))
         }
     
-        // Validate the selector if needed
-        // require(selector == expectedSelector, "Vault: invalid function selector");
-    
         return amount;
+    }
+
+    /**
+    * @notice Helper function to decode the ID from the function call data
+    * @param _data The encoded function call data
+    * @param _paramIndex The index of the ID parameter
+    * @return The decoded ID
+    */
+    function _decodeId(bytes calldata _data, uint8 _paramIndex) private pure returns (uint256) {
+        require(_paramIndex < 6, "Vault: parameter index out of range");
+
+        bytes4 selector;
+        uint256 id;
+
+        assembly {
+            selector := calldataload(_data.offset)
+            id := calldataload(add(_data.offset, add(0x04, mul(_paramIndex, 0x20))))
+        }
+
+        return id;
     }
 
     /**
@@ -167,11 +248,9 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
     * @return Revert reason string
     */
     function _getRevertMsg(bytes memory _returnData) private pure returns (string memory) {
-        // If the _returnData length is less than 68, then the transaction failed silently (without a revert message)
         if (_returnData.length < 68) return 'Transaction reverted silently';
         
         assembly {
-            // Slice the sighash.
             _returnData := add(_returnData, 0x04)
         }
         return abi.decode(_returnData, (string));
