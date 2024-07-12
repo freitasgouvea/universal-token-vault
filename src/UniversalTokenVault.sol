@@ -280,4 +280,30 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
         }
         return abi.decode(_returnData, (string));
     }
+
+    /**
+     * @dev Receive ERC1155 tokens.
+     * @notice These functions are called by the ERC1155 token contract whenever tokens are transferred to this contract.
+     * @notice It is not posible recieve ERC1155 tokens without these implementations.
+     * @notice See IERC1155Receiver for more info.
+     */
+    function onERC1155Received(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes calldata
+    ) external virtual returns (bytes4) {
+        return UniversalTokenVault.onERC1155Received.selector;
+    }
+
+    function onERC1155BatchReceived(
+        address,
+        address,
+        uint256[] calldata,
+        uint256[] calldata,
+        bytes calldata
+    ) external virtual returns (bytes4) {
+        return UniversalTokenVault.onERC1155BatchReceived.selector;
+    }
 }
