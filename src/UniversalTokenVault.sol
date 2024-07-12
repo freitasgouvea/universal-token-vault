@@ -241,7 +241,7 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
     
         assembly {
             selector := calldataload(_data.offset)
-            amount := calldataload(add(_data.offset, add(0x04, mul(_paramIndex, 0x20))))
+            amount := calldataload(add(_data.offset, add(0x04, mul(add(_paramIndex, 1), 0x20))))
         }
     
         return amount;
@@ -261,7 +261,7 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
 
         assembly {
             selector := calldataload(_data.offset)
-            id := calldataload(add(_data.offset, add(0x04, mul(_paramIndex, 0x20))))
+            id := calldataload(add(_data.offset, add(0x04, mul(add(_paramIndex, 1), 0x20))))
         }
 
         return id;
