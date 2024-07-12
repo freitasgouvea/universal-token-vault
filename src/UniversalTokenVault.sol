@@ -236,12 +236,12 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
     function _decodeAmount(bytes calldata _data, uint8 _paramIndex) private pure returns (uint256) {
         require(_paramIndex < 6, "Vault: parameter index out of range");
     
-        bytes4 selector;
         uint256 amount;
-    
+        
         assembly {
-            selector := calldataload(_data.offset)
-            amount := calldataload(add(_data.offset, add(0x04, mul(add(_paramIndex, 1), 0x20))))
+            let offset := add(_data.offset, 0x04)
+            offset := add(offset, mul(_paramIndex, 0x20))
+            amount := calldataload(offset)
         }
     
         return amount;
@@ -256,12 +256,12 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
     function _decodeId(bytes calldata _data, uint8 _paramIndex) private pure returns (uint256) {
         require(_paramIndex < 6, "Vault: parameter index out of range");
 
-        bytes4 selector;
         uint256 id;
-
+        
         assembly {
-            selector := calldataload(_data.offset)
-            id := calldataload(add(_data.offset, add(0x04, mul(add(_paramIndex, 1), 0x20))))
+            let offset := add(_data.offset, 0x04)
+            offset := add(offset, mul(_paramIndex, 0x20))
+            id := calldataload(offset)
         }
 
         return id;
