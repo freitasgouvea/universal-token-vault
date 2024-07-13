@@ -6,12 +6,14 @@ import {Script} from "forge-std/Script.sol";
 import {UniversalTokenVault} from "../src/UniversalTokenVault.sol";
 
 contract Deploy is Script {
-    function run() external {
+    function run() external returns (address) {
         // Start broadcasting transactions
         vm.startBroadcast();
 
         // Deploy the UniversalTokenVault contract
         UniversalTokenVault vault = new UniversalTokenVault();
         vault.initialize();
+
+        return address(vault);
     }
 }
