@@ -25,8 +25,8 @@ contract RegisterTokens is Script {
             erc20.transferFrom.selector, // deposit function signature
             erc20.transfer.selector, // withdraw function signature
             2, // amount parameter index for deposit
-            1, // amount parameter index for withdraw
             0, // id parameter index for deposit (not used)
+            1, // amount parameter index for withdraw
             0  // id parameter index for withdraw (not used)
         );
 
@@ -41,8 +41,8 @@ contract RegisterTokens is Script {
             erc721.transferFrom.selector, // deposit function signature
             erc721.transferFrom.selector, // withdraw function signature
             0, // amount parameter index for deposit (not used)
-            0, // amount parameter index for withdraw (not used)
             2, // id parameter index for deposit
+            0, // amount parameter index for withdraw (not used)
             2  // id parameter index for withdraw
         );
 
@@ -57,8 +57,8 @@ contract RegisterTokens is Script {
             erc1155.safeTransferFrom.selector, // deposit function signature
             erc1155.safeTransferFrom.selector, // withdraw function signature
             3, // amount parameter index for deposit
-            3, // amount parameter index for withdraw
             2, // id parameter index for deposit
+            3, // amount parameter index for withdraw
             2  // id parameter index for withdraw
         );
 
