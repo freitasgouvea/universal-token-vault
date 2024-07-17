@@ -14,7 +14,7 @@ interface Events {
     event Transfer(address indexed from, address indexed to, uint256 value);
 }
 
-contract VaultTest is Test, Events {
+contract UniversalTokenVaultTest is Test, Events {
     ERC20Test public erc20;
     ERC721Test public erc721;
     ERC1155Test public erc1155;
