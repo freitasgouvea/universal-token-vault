@@ -20,8 +20,8 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
         bytes4 depositFunctionSignature;
         bytes4 withdrawFunctionSignature;
         uint8 amountParamIndexForDeposit;
-        uint8 amountParamIndexForWithdraw;
         uint8 idParamIndexForDeposit;
+        uint8 amountParamIndexForWithdraw;
         uint8 idParamIndexForWithdraw;
     }
 
@@ -161,7 +161,7 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
     * @param _token The address of the token to withdraw
     * @param _data The encoded function call data
     */
-    function withdraw(address _token, bytes calldata _data) external onlyOwner whenNotPaused nonReentrant {
+    function withdraw(address _token, bytes calldata _data) external whenNotPaused nonReentrant {
         require(registeredTokens[_token].active, "Vault: token not active");
         require(_token != address(0), "Vault: token address cannot be zero");
         require(_data.length >= 4, "Vault: data must contain a function selector");
@@ -184,6 +184,8 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
         }
 
         if (registeredTokens[_token].hasAmount && registeredTokens[_token].hasId) {
+            amount = _decodeAmount(_data, registeredTokens[_token].amountParamIndexForWithdraw);
+            id = _decodeId(_data, registeredTokens[_token].idParamIndexForWithdraw);
             require(userOwnerOfBalance[_token][id][msg.sender] >= amount, "Vault: insufficient balance for token ID");
 
             userOwnerOfBalance[_token][id][msg.sender] -= amount;
