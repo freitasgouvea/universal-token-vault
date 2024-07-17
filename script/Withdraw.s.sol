@@ -8,7 +8,7 @@ import {ERC20Test} from "../src/ERC20Test.sol";
 import {ERC721Test} from "../src/ERC721Test.sol";
 import {ERC1155Test} from "../src/ERC1155Test.sol";
 
-contract WithdrawTokens is Script {
+contract Withdraw is Script {
     function run(
       address vaultAddress, 
       address erc20Address, 
@@ -23,7 +23,7 @@ contract WithdrawTokens is Script {
         ERC1155Test erc1155 = ERC1155Test(erc1155Address);
 
         // Withdraw ERC20
-        bytes memory dataERC20 = abi.encodeWithSelector(erc20.transfer.selector, msg.sender, 100000);
+        bytes memory dataERC20 = abi.encodeWithSelector(ERC20Test(erc20Address).transfer.selector, msg.sender, 100000);
         vault.withdraw(address(erc20), dataERC20);
 
         // Withdraw ERC721
