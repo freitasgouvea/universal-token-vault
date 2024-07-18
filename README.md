@@ -8,18 +8,6 @@ UniversalTokenVault is a versatile and secure smart contract that allows users t
 
 > **Disclaimer:** This code is for testing purposes only. It is under development (WIP) and has not been audited. Use at your own risk.
 
-## 📚 Table of Contents
-
-- [Overview](#overview)
-- [Features](#features)
-- [Security Features](#security-features)
-- [Getting Started](#getting-started)
-- [Smart Contract Structure](#smart-contract-structure)
-- [Running Tests](#running-tests)
-- [Usage](#usage)
-- [Scripts](#scripts)
-- [License](#license)
-
 ## 🌟 Overview
 
 UniversalTokenVault is designed to handle various token standards with custom function signatures for deposits and withdrawals. The contract maintains user balances and ownership of tokens, providing a flexible and secure solution for token management.
@@ -117,9 +105,9 @@ These functions are implemented to allow the vault to receive ERC1155 tokens dir
 
 Run tests:
 
-    ```bash
-    forge test
-    ```
+   ```sh
+   forge test
+   ```
     
 ## 🧐 Usage
 
