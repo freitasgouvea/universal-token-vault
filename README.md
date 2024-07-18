@@ -32,6 +32,11 @@ The contract maintains mappings to track user balances and ownership of tokens. 
 
 The contract implements security features such as `Pausable` and `ReentrancyGuard` to ensure safe and reliable operation. The vault can be paused to prevent deposits and withdrawals during maintenance or emergencies.
 
+Additionally, helper functions ensure that only the registered functions can be called and only the correct amounts and IDs can be used:
+
+- Verify function signature: Ensures that the function being called matches the registered function signature.
+- Decode amount: Decodes the amount parameter from the provided data based on the specified parameter index.
+- Decode Id: Decodes the ID parameter from the provided data based on the specified parameter index.
 
 ## Smart Contract Structure
 
@@ -41,7 +46,17 @@ The contract implements security features such as `Pausable` and `ReentrancyGuar
 
 ### Token Activation and Deactivation
 
-- `activateToken(...)`: Registers a token in the vault with specific parameters. This includes whether the token has an amount and/or ID parameter, and the function signatures for deposit and withdraw operations.
+- `activateToken(address _token, bool _hasAmount, bool _hasId, bytes4 _depositFunctionSignature, bytes4 _withdrawFunctionSignature, uint8 _amountParamIndexForDeposit, uint8 _idParamIndexForDeposit, uint8 _amountParamIndexForWithdraw, uint8 _idParamIndexForWithdraw)`: Registers a token in the vault with specific parameters.
+  - `_token`: The address of the token to be activated.
+  - `_hasAmount`: Indicates if the token has an amount parameter.
+  - `_hasId`: Indicates if the token has an ID parameter.
+  - `_depositFunctionSignature`: The function signature for deposit.
+  - `_withdrawFunctionSignature`: The function signature for withdrawal.
+  - `_amountParamIndexForDeposit`: The index of the amount parameter for deposit.
+  - `_idParamIndexForDeposit`: The index of the ID parameter for deposit.
+  - `_amountParamIndexForWithdraw`: The index of the amount parameter for withdrawal.
+  - `_idParamIndexForWithdraw`: The index of the ID parameter for withdrawal.
+
 - `deactivateToken(address _token)`: Deactivates a previously registered token, preventing further deposits and withdrawals.
 
 ### Deposit and Withdraw
@@ -107,57 +122,35 @@ To use the `UniversalTokenVault` contract, follow these steps:
 2. **Token Registration**: Register the tokens you want to manage by calling the `activateToken()` function with the appropriate parameters.
 3. **Deposits and Withdrawals**: Users can deposit tokens into the vault using the `deposit()` function and withdraw tokens using the `withdraw()` function.
 
-## Example
+## Example Scripts
 
-Here's a simple example in solidity of how to interact with the contract:
+Here are the example scripts to deploy and interact with the `UniversalTokenVault` contract using Foundry.
 
-1. **Deploy the contract**:
+I understand. Here are the terminal commands to run the scripts with the required parameters and private key:
 
-```solidity
-UniversalTokenVault vault = new UniversalTokenVault();
-vault.initialize();
+### 1. Deploy Vault
+
+```sh
+forge script Deploy.s.sol --broadcast --rpc-url <YOUR_RPC_URL> --private-key <YOUR_PRIVATE_KEY>
 ```
 
-2. **Register a token**:
+### 2. Deploy and Register Tokens
 
-```solidity
-address token = address(0x1234);
-vault.activateToken(
-    token, 
-    true, 
-    false, 
-    bytes4(keccak256("transfer(address,uint256)")), 
-    bytes4(keccak256("transfer(address,uint256)")), 
-    1, 
-    0, 
-    1, 
-    0
-);
+```sh
+forge script RegisterTokens.s.sol --broadcast --rpc-url <YOUR_RPC_URL> --private-key <YOUR_PRIVATE_KEY> --sig "run(address)" <VAULT_ADDRESS>
 ```
 
-3. **Deposit a token**:
+### 3. Deposit Tokens
 
-```solidity
-bytes memory data = abi.encodeWithSelector(
-    bytes4(keccak256("transfer(address,uint256)")), 
-    address(vault), 
-    100
-);
-vault.deposit(token, data);
+```sh
+forge script Deposit.s.sol --broadcast --rpc-url <YOUR_RPC_URL> --private-key <YOUR_PRIVATE_KEY> --sig "run(address,address,address,address)" <VAULT_ADDRESS> <ERC20_ADDRESS> <ERC721_ADDRESS> <ERC1155_ADDRESS>
 ```
 
-4. **Withdraw a token**:
+### 4. Withdraw Tokens
 
-```solidity
-bytes memory data = abi.encodeWithSelector(
-    bytes4(keccak256("transfer(address,uint256)")), 
-    msg.sender, 
-    100
-);
-vault.withdraw(token, data);
+```sh
+forge script Withdraw.s.sol --broadcast --rpc-url <YOUR_RPC_URL> --private-key <YOUR_PRIVATE_KEY> --sig "run(address,address,address,address)" <VAULT_ADDRESS> <ERC20_ADDRESS> <ERC721_ADDRESS> <ERC1155_ADDRESS>
 ```
-
-This example demonstrates the basic usage of the `UniversalTokenVault` contract, from deployment and initialization to token registration and deposit/withdrawal operations.
 
 ### Contribution
 
