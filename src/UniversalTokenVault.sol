@@ -235,6 +235,7 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
 
     /**
     * @notice Helper function to compare the value of function sigature to calldata selector
+    * @notice To compares the registered token functions signatures with the calldata selector
     * @param _storedSignature Stored function sigature
     * @param _data The encoded function call data
     * @return The result of comparsion
