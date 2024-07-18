@@ -26,7 +26,7 @@ UniversalTokenVault is designed to handle various token standards with custom fu
 
 ## ✨ Features
 
-- **Multi-token support:** Handle ERC20, ERC721, and ERC1155 tokens.
+- **Multi-token support:** Handle ERC20, ERC721, ERC1155 and custom tokens.
 - **Custom function signatures:** Store and verify function signatures for deposits and withdrawals.
 - **Flexible parameter indexing:** Configure different parameter indices for each token type.
 - **Security measures:** Includes reentrancy protection, pausability, and ownership control.
@@ -115,12 +115,8 @@ These functions are implemented to allow the vault to receive ERC1155 tokens dir
 
 ## 🧪 Running Tests
 
-1. Compile the smart contract:
-    ```bash
-    forge build
-    ```
+Run tests:
 
-2. Run tests:
     ```bash
     forge test
     ```
