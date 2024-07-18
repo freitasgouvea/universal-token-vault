@@ -1,44 +1,73 @@
-# Universal Token Vault
+# UniversalTokenVault
 
-The `UniversalTokenVault` smart contract is designed to be a flexible vault that can hold and manage various types of tokens, including ERC20, ERC721, ERC1155, and custom token standards. It allows users to deposit and withdraw tokens while keeping track of balances and ownership. The contract supports customization of the deposit and withdraw functions, making it adaptable to different token types and use cases.
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Solidity](https://img.shields.io/badge/solidity-%5E0.8.20-lightgrey.svg)
+![Status](https://img.shields.io/badge/status-WIP-red.svg)
 
-## Table of Contents
+UniversalTokenVault is a versatile and secure smart contract that allows users to deposit and withdraw various types of tokens (ERC20, ERC721, ERC1155) with ease. This project aims to provide a unified interface for managing multiple token standards, ensuring security and flexibility.
 
+> **Disclaimer:** This code is for testing purposes only. It is under development (WIP) and has not been audited. Use at your own risk.
+
+## 📚 Table of Contents
+
+- [Overview](#overview)
 - [Features](#features)
-- [Key Concepts](#key-concepts)
+- [Security Features](#security-features)
+- [Getting Started](#getting-started)
 - [Smart Contract Structure](#smart-contract-structure)
-- [Installation and Setup](#installation-and-setup)
+- [Running Tests](#running-tests)
 - [Usage](#usage)
+- [Scripts](#scripts)
+- [License](#license)
 
-## Features
+## 🌟 Overview
 
-- Supports multiple token standards (ERC20, ERC721, ERC1155, and custom tokens).
-- Ability to register, deposit, and withdraw tokens.
-- Tracks user balances and ownership of tokens.
-- Implements Pausable and ReentrancyGuard for enhanced security.
-- Ability to handle custom function signatures for deposit and withdraw operations.
+UniversalTokenVault is designed to handle various token standards with custom function signatures for deposits and withdrawals. The contract maintains user balances and ownership of tokens, providing a flexible and secure solution for token management.
 
-## Key Concepts
+## ✨ Features
 
-### Token Registration
+- **Multi-token support:** Handle ERC20, ERC721, and ERC1155 tokens.
+- **Custom function signatures:** Store and verify function signatures for deposits and withdrawals.
+- **Flexible parameter indexing:** Configure different parameter indices for each token type.
+- **Security measures:** Includes reentrancy protection, pausability, and ownership control.
 
-The vault allows the owner to register different tokens by specifying their characteristics, such as whether they have an amount parameter, an ID parameter, and the function signatures for deposit and withdrawal. This makes the contract versatile and capable of handling multiple token standards.
+## 🛡️ Security Features
 
-### User Balances and Ownership
+- **ReentrancyGuard:** Prevents reentrancy attacks.
+- **Pausable:** Allows the contract to be paused in case of emergencies.
+- **Ownable:** Restricts certain functions to the contract owner.
+- **Function Signature Verification:** Ensures that the registered token functions are correctly called.
+- **Parameter Decoding:** Validates and decodes the amount and ID parameters for deposits and withdrawals.
 
-The contract maintains mappings to track user balances and ownership of tokens. For ERC20-like tokens, it tracks the amount held by each user. For ERC721 and ERC1155 tokens, it tracks ownership and balances based on token IDs.
+## 🚀 Getting Started
 
-### Security Features
+### Prerequisites
 
-The contract implements security features such as `Pausable` and `ReentrancyGuard` to ensure safe and reliable operation. The vault can be paused to prevent deposits and withdrawals during maintenance or emergencies.
+- [Foundry](https://book.getfoundry.sh/getting-started/installation) - Ethereum development environment
+- [Node.js](https://nodejs.org/) and [npm](https://www.npmjs.com/)
 
-Additionally, helper functions ensure that only the registered functions can be called and only the correct amounts and IDs can be used:
+### Installation
 
-- Verify function signature: Ensures that the function being called matches the registered function signature.
-- Decode amount: Decodes the amount parameter from the provided data based on the specified parameter index.
-- Decode Id: Decodes the ID parameter from the provided data based on the specified parameter index.
+1. Clone the repository:
 
-## Smart Contract Structure
+   ```sh
+   git clone https://github.com/yourusername/UniversalTokenVault.git
+   cd UniversalTokenVault
+   ```
+
+2. Install dependencies:
+
+   ```sh
+   npm install
+   ```
+
+3. Compile the contracts:
+
+   ```sh
+   forge build
+   ```
+
+## 📜 Smart Contract Structure
 
 ### Initialization
 
@@ -66,6 +95,7 @@ Additionally, helper functions ensure that only the registered functions can be 
 
 ### Helper Functions
 
+- `_verifyFunctionSignature(bytes4 _storedSignature, bytes calldata _data)`: Compares the stored function signature with the calldata selector to verify the function being called.
 - `_decodeAmount(bytes calldata _data, uint8 _paramIndex)`: Decodes the amount parameter from the provided data based on the specified parameter index.
 - `_decodeId(bytes calldata _data, uint8 _paramIndex)`: Decodes the ID parameter from the provided data based on the specified parameter index.
 - `_getRevertMsg(bytes memory _returnData)`: Extracts the revert reason from the return data of a failed call.
@@ -83,26 +113,7 @@ These functions are implemented to allow the vault to receive ERC1155 tokens dir
 - `onERC1155Received(...)`: Handles the receipt of single ERC1155 token transfers.
 - `onERC1155BatchReceived(...)`: Handles the receipt of batch ERC1155 token transfers.
 
-## Installation and Setup
-
-### Prerequisites
-
-- [Foundry](https://getfoundry.sh/) for compiling, testing, and deploying smart contracts.
-
-### Installation
-
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/freitasgouvea/universal-token-vault.git
-    cd universal-token-vault
-    ```
-
-2. Install dependencies:
-    ```bash
-    forge install
-    ```
-
-### Running Tests
+## 🧪 Running Tests
 
 1. Compile the smart contract:
     ```bash
@@ -113,8 +124,8 @@ These functions are implemented to allow the vault to receive ERC1155 tokens dir
     ```bash
     forge test
     ```
-
-## Usage
+    
+## 🧐 Usage
 
 To use the `UniversalTokenVault` contract, follow these steps:
 
@@ -122,44 +133,40 @@ To use the `UniversalTokenVault` contract, follow these steps:
 2. **Token Registration**: Register the tokens you want to manage by calling the `activateToken()` function with the appropriate parameters.
 3. **Deposits and Withdrawals**: Users can deposit tokens into the vault using the `deposit()` function and withdraw tokens using the `withdraw()` function.
 
-## Example Scripts
+## 👨‍💻 Scripts
 
-Here are the example scripts to deploy and interact with the `UniversalTokenVault` contract using Foundry.
+To deploy and test the UniversalTokenVault contract using Foundry, follow these steps:
 
-I understand. Here are the terminal commands to run the scripts with the required parameters and private key:
-
-### 1. Deploy Vault
+### 1. Deploy the Vault Contract
 
 ```sh
-forge script Deploy.s.sol --broadcast --rpc-url <YOUR_RPC_URL> --private-key <YOUR_PRIVATE_KEY>
+forge script script/Deploy.s.sol --private-key your-private-key --broadcast
 ```
 
 ### 2. Deploy and Register Tokens
 
 ```sh
-forge script RegisterTokens.s.sol --broadcast --rpc-url <YOUR_RPC_URL> --private-key <YOUR_PRIVATE_KEY> --sig "run(address)" <VAULT_ADDRESS>
+forge script script/RegisterTokens.s.sol --private-key your-private-key --sig "run(address)" <vaultAddress> --broadcast
 ```
 
 ### 3. Deposit Tokens
 
 ```sh
-forge script Deposit.s.sol --broadcast --rpc-url <YOUR_RPC_URL> --private-key <YOUR_PRIVATE_KEY> --sig "run(address,address,address,address)" <VAULT_ADDRESS> <ERC20_ADDRESS> <ERC721_ADDRESS> <ERC1155_ADDRESS>
+forge script script/Deposit.s.sol --private-key your-private-key --sig "run(address,address,address,address)" <vaultAddress> <erc20Address> <erc721Address> <erc1155Address> --broadcast
 ```
 
 ### 4. Withdraw Tokens
 
 ```sh
-forge script Withdraw.s.sol --broadcast --rpc-url <YOUR_RPC_URL> --private-key <YOUR_PRIVATE_KEY> --sig "run(address,address,address,address)" <VAULT_ADDRESS> <ERC20_ADDRESS> <ERC721_ADDRESS> <ERC1155_ADDRESS>
+forge script script/Withdraw.s.sol --private-key your-private-key --sig "run(address,address,address,address)" <vaultAddress> <erc20Address> <erc721Address> <erc1155Address> --broadcast
 ```
 
-### Contribution
+## 📄 License
 
-Feel free to fork this repository and contribute by submitting a pull request. For major changes, please open an issue first to discuss what you would like to change.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-## Disclaimer
+---
 
-**This code is for testing purposes only and has not been audited. It may contain vulnerabilities and should not be used in production. The contract is under development and is considered a Work In Progress (WIP). Use at your own risk.**
+Feel free to fork this repository and contribute by submitting a pull request. For major changes, please open an issue first to discuss what you would like to change. Thanks!
 
-### License
 
-This project is licensed under the MIT License.
