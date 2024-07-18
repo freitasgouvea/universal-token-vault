@@ -119,33 +119,35 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
     * @param _data The encoded function call data
     */
     function deposit(address _token, bytes calldata _data) external whenNotPaused nonReentrant {
-        require(registeredTokens[_token].active, "Vault: token not active");
+        Token memory registeredToken = registeredTokens[_token];
+        
+        require(registeredToken.active, "Vault: token not active");
         require(_token != address(0), "Vault: token address cannot be zero");
         require(_data.length >= 4, "Vault: data must contain a function selector");
+        require(_verifyFunctionSignature(registeredToken.depositFunctionSignature, _data), "Vault: invalid signature");
 
-        // todo: verify function signature
         (bool success, bytes memory returnData) = _token.call(_data);
         require(success, _getRevertMsg(returnData));
 
-        if (registeredTokens[_token].hasAmount && !registeredTokens[_token].hasId) {
-            uint256 amount = _decodeAmount(_data, registeredTokens[_token].amountParamIndexForDeposit);
+        if (registeredToken.hasAmount && !registeredToken.hasId) {
+            uint256 amount = _decodeAmount(_data, registeredToken.amountParamIndexForDeposit);
 
             userTokenBalances[_token][msg.sender] += amount;
 
             emit Deposit(msg.sender, _token, _data, amount, 0);
         }
 
-        if (!registeredTokens[_token].hasAmount && registeredTokens[_token].hasId) {
-            uint256 id = _decodeId(_data, registeredTokens[_token].idParamIndexForDeposit);
+        if (!registeredToken.hasAmount && registeredToken.hasId) {
+            uint256 id = _decodeId(_data, registeredToken.idParamIndexForDeposit);
 
             userOwnerOf[_token][id] = msg.sender;
 
             emit Deposit(msg.sender, _token, _data, 0, id);
         }
 
-        if (registeredTokens[_token].hasAmount && registeredTokens[_token].hasId) {
-            uint256 amount = _decodeAmount(_data, registeredTokens[_token].amountParamIndexForDeposit);
-            uint256 id = _decodeId(_data, registeredTokens[_token].idParamIndexForDeposit);
+        if (registeredToken.hasAmount && registeredToken.hasId) {
+            uint256 amount = _decodeAmount(_data, registeredToken.amountParamIndexForDeposit);
+            uint256 id = _decodeId(_data, registeredToken.idParamIndexForDeposit);
 
             userTokenBalances[_token][msg.sender] += amount;
             userOwnerOfBalance[_token][id][msg.sender] += amount;
@@ -162,36 +164,38 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
     * @param _data The encoded function call data
     */
     function withdraw(address _token, bytes calldata _data) external whenNotPaused nonReentrant {
-        require(registeredTokens[_token].active, "Vault: token not active");
+        Token memory registeredToken = registeredTokens[_token];
+
+        require(registeredToken.active, "Vault: token not active");
         require(_token != address(0), "Vault: token address cannot be zero");
         require(_data.length >= 4, "Vault: data must contain a function selector");
+        require(_verifyFunctionSignature(registeredToken.withdrawFunctionSignature, _data), "Vault: invalid signature");
 
         uint256 amount = 0;
         uint256 id = 0;
 
-        if (registeredTokens[_token].hasAmount && !registeredTokens[_token].hasId) {
-            amount = _decodeAmount(_data, registeredTokens[_token].amountParamIndexForWithdraw);
+        if (registeredToken.hasAmount && !registeredToken.hasId) {
+            amount = _decodeAmount(_data, registeredToken.amountParamIndexForWithdraw);
             require(userTokenBalances[_token][msg.sender] >= amount, "Vault: insufficient balance");
 
             userTokenBalances[_token][msg.sender] -= amount;
         }
 
-        if (!registeredTokens[_token].hasAmount && registeredTokens[_token].hasId) {
-            id = _decodeId(_data, registeredTokens[_token].idParamIndexForWithdraw);
+        if (!registeredToken.hasAmount && registeredToken.hasId) {
+            id = _decodeId(_data, registeredToken.idParamIndexForWithdraw);
             require(userOwnerOf[_token][id] == msg.sender, "Vault: not the owner of the token ID");
 
             userOwnerOf[_token][id] = address(0);
         }
 
-        if (registeredTokens[_token].hasAmount && registeredTokens[_token].hasId) {
-            amount = _decodeAmount(_data, registeredTokens[_token].amountParamIndexForWithdraw);
-            id = _decodeId(_data, registeredTokens[_token].idParamIndexForWithdraw);
+        if (registeredToken.hasAmount && registeredToken.hasId) {
+            amount = _decodeAmount(_data, registeredToken.amountParamIndexForWithdraw);
+            id = _decodeId(_data, registeredToken.idParamIndexForWithdraw);
             require(userOwnerOfBalance[_token][id][msg.sender] >= amount, "Vault: insufficient balance for token ID");
 
             userOwnerOfBalance[_token][id][msg.sender] -= amount;
         }
 
-        // todo: verify function signature
         (bool success, bytes memory returnData) = _token.call(_data);
         require(success, _getRevertMsg(returnData));
 
@@ -227,6 +231,22 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
     */
     function getUserBalanceOfTokenId(address _user, address _token, uint256 _id) external view returns (uint256) {
         return userOwnerOfBalance[_token][_id][_user];
+    }
+
+    /**
+    * @notice Helper function to compare the value of function sigature to calldata selector
+    * @param _storedSignature Stored function sigature
+    * @param _data The encoded function call data
+    * @return The result of comparsion
+    */
+    function _verifyFunctionSignature(bytes4 _storedSignature, bytes calldata _data) private pure returns (bool)  {
+        bytes4 selector;
+
+        assembly {
+            selector := calldataload(_data.offset)
+        }
+
+        return _storedSignature == selector;
     }
 
     /**
