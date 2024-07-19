@@ -43,13 +43,7 @@ UniversalTokenVault is designed to handle various token standards with custom fu
    cd UniversalTokenVault
    ```
 
-2. Install dependencies:
-
-   ```sh
-   npm install
-   ```
-
-3. Compile the contracts:
+2. Compile the contracts:
 
    ```sh
    forge build
@@ -103,10 +97,10 @@ These functions are implemented to allow the vault to receive ERC1155 tokens dir
 
 ## 🧪 Running Tests
 
-Run tests:
+Run tests with traces:
 
    ```sh
-   forge test
+   forge test -vvvv
    ```
     
 ## 🧐 Usage
