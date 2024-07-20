@@ -4,9 +4,21 @@
 ![Solidity](https://img.shields.io/badge/solidity-%5E0.8.20-lightgrey.svg)
 ![Status](https://img.shields.io/badge/status-WIP-red.svg)
 
-UniversalTokenVault is a versatile and secure smart contract that allows users to deposit and withdraw various types of tokens (ERC20, ERC721, ERC1155) with ease. This project aims to provide a unified interface for managing multiple token standards, ensuring security and flexibility.
+UniversalTokenVault is a versatile smart contract that allows users to deposit and withdraw various types of tokens (ERC20, ERC721, ERC1155 and Custom Tokens) with ease. This project aims to provide a unified interface for managing multiple token standards, ensuring security and flexibility.
 
-> **Disclaimer:** This code is for testing purposes only. It is under development (WIP) and has not been audited. Use at your own risk.
+> **Disclaimer:** This code is for testing purposes only. For now it is not recommended to use this in production, it is under development (WIP) and has not been audited. Use at your own risk.
+
+## 📚 Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Security Features](#security-features)
+- [Getting Started](#getting-started)
+- [Smart Contract Structure](#smart-contract-structure)
+- [Running Tests](#running-tests)
+- [Usage](#usage)
+- [Scripts](#scripts)
+- [License](#license)
 
 ## 🌟 Overview
 
@@ -14,10 +26,9 @@ UniversalTokenVault is designed to handle various token standards with custom fu
 
 ## ✨ Features
 
-- **Multi-token support:** Handle ERC20, ERC721, ERC1155 and custom tokens.
+- **Multi-token support:** Handle ERC20, ERC721, ERC1155 and Custom Tokens.
 - **Custom function signatures:** Store and verify function signatures for deposits and withdrawals.
 - **Flexible parameter indexing:** Configure different parameter indices for each token type.
-- **Security measures:** Includes reentrancy protection, pausability, and ownership control.
 
 ## 🛡️ Security Features
 
@@ -25,7 +36,9 @@ UniversalTokenVault is designed to handle various token standards with custom fu
 - **Pausable:** Allows the contract to be paused in case of emergencies.
 - **Ownable:** Restricts certain functions to the contract owner.
 - **Function Signature Verification:** Ensures that the registered token functions are correctly called.
-- **Parameter Decoding:** Validates and decodes the amount and ID parameters for deposits and withdrawals.
+- **Safe Deposit**: Validates and decodes the `msg.sender` and the address used in field `from` to only allow deposits from owner.
+- **Safe Withdraw**: Validates and decodes the `msg.sender` and the address used in field `to` to only allow withdraws to owner.
+- **Amount and/or Id Verification:** Validates and decodes the `amount` and `id` parameters for deposits and withdrawals.
 
 ## 🚀 Getting Started
 
@@ -57,14 +70,16 @@ UniversalTokenVault is designed to handle various token standards with custom fu
 
 ### Token Activation and Deactivation
 
-- `activateToken(address _token, bool _hasAmount, bool _hasId, bytes4 _depositFunctionSignature, bytes4 _withdrawFunctionSignature, uint8 _amountParamIndexForDeposit, uint8 _idParamIndexForDeposit, uint8 _amountParamIndexForWithdraw, uint8 _idParamIndexForWithdraw)`: Registers a token in the vault with specific parameters.
+- `activateToken(address _token, bool _hasAmount, bool _hasId, bytes4 _depositFunctionSignature, bytes4 _withdrawFunctionSignature, uint8 _fromParamIndexForDeposit, uint8 _amountParamIndexForDeposit, uint8 _idParamIndexForDeposit, uint8 _toParamIndexForWithdraw, uint8 _amountParamIndexForWithdraw, uint8 _idParamIndexForWithdraw)`: Registers a token in the vault with specific parameters.
   - `_token`: The address of the token to be activated.
   - `_hasAmount`: Indicates if the token has an amount parameter.
   - `_hasId`: Indicates if the token has an ID parameter.
   - `_depositFunctionSignature`: The function signature for deposit.
   - `_withdrawFunctionSignature`: The function signature for withdrawal.
+  - `_fromParamIndexForDeposit`: The index of the from parameter for deposit.
   - `_amountParamIndexForDeposit`: The index of the amount parameter for deposit.
   - `_idParamIndexForDeposit`: The index of the ID parameter for deposit.
+  - `_toParamIndexForWithdraw`: The index of the to parameter for withdrawal.
   - `_amountParamIndexForWithdraw`: The index of the amount parameter for withdrawal.
   - `_idParamIndexForWithdraw`: The index of the ID parameter for withdrawal.
 
@@ -97,11 +112,15 @@ These functions are implemented to allow the vault to receive ERC1155 tokens dir
 
 ## 🧪 Running Tests
 
-Run tests with traces:
+1. Compile the smart contract:
+    ```bash
+    forge build
+    ```
 
-   ```sh
-   forge test -vvvv
-   ```
+2. Run tests:
+    ```bash
+    forge test
+    ```
     
 ## 🧐 Usage
 
@@ -118,25 +137,25 @@ To deploy and test the UniversalTokenVault contract using Foundry, follow these 
 ### 1. Deploy the Vault Contract
 
 ```sh
-forge script script/Deploy.s.sol --private-key your-private-key --broadcast
+forge script script/Deploy.s.sol --rpc-url chain-rpc-url --private-key your-private-key --broadcast
 ```
 
 ### 2. Deploy and Register Tokens
 
 ```sh
-forge script script/RegisterTokens.s.sol --private-key your-private-key --sig "run(address)" <vaultAddress> --broadcast
+forge script script/RegisterTokens.s.sol --rpc-url chain-rpc-url --private-key your-private-key --sig "run(address)" <vaultAddress> --broadcast
 ```
 
 ### 3. Deposit Tokens
 
 ```sh
-forge script script/Deposit.s.sol --private-key your-private-key --sig "run(address,address,address,address)" <vaultAddress> <erc20Address> <erc721Address> <erc1155Address> --broadcast
+forge script script/Deposit.s.sol --rpc-url chain-rpc-url --private-key your-private-key --sig "run(address,address,address,address)" <vaultAddress> <erc20Address> <erc721Address> <erc1155Address> --broadcast
 ```
 
 ### 4. Withdraw Tokens
 
 ```sh
-forge script script/Withdraw.s.sol --private-key your-private-key --sig "run(address,address,address,address)" <vaultAddress> <erc20Address> <erc721Address> <erc1155Address> --broadcast
+forge script script/Withdraw.s.sol --rpc-url chain-rpc-url --private-key your-private-key --sig "run(address,address,address,address)" <vaultAddress> <erc20Address> <erc721Address> <erc1155Address> --broadcast
 ```
 
 ## 📄 License
