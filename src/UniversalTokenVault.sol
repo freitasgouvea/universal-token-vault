@@ -19,8 +19,10 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
         bool hasId;
         bytes4 depositFunctionSignature;
         bytes4 withdrawFunctionSignature;
+        uint8 fromParamIndexForDeposit;
         uint8 amountParamIndexForDeposit;
         uint8 idParamIndexForDeposit;
+        uint8 toParamIndexForWithdraw;
         uint8 amountParamIndexForWithdraw;
         uint8 idParamIndexForWithdraw;
     }
@@ -65,8 +67,10 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
     * @param _hasId If the token has an ID parameter
     * @param _depositFunctionSignature The function signature for deposit
     * @param _withdrawFunctionSignature The function signature for withdraw
+    * @param _fromParamIndexForDeposit The index of the from parameter for deposit
     * @param _amountParamIndexForDeposit The index of the amount parameter for deposit
     * @param _idParamIndexForDeposit The index of the ID parameter for deposit
+    * @param _toParamIndexForWithdraw The index of the to parameter for withdraw
     * @param _amountParamIndexForWithdraw The index of the amount parameter for withdraw
     * @param _idParamIndexForWithdraw The index of the ID parameter for withdraw
     */
@@ -76,8 +80,10 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
         bool _hasId, 
         bytes4 _depositFunctionSignature,
         bytes4 _withdrawFunctionSignature,
+        uint8 _fromParamIndexForDeposit,
         uint8 _amountParamIndexForDeposit,
         uint8 _idParamIndexForDeposit,
+        uint8 _toParamIndexForWithdraw,
         uint8 _amountParamIndexForWithdraw,
         uint8 _idParamIndexForWithdraw
     ) external onlyOwner {
@@ -91,8 +97,10 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
             _hasId,
             _depositFunctionSignature,
             _withdrawFunctionSignature,
+            _fromParamIndexForDeposit,
             _amountParamIndexForDeposit,
             _idParamIndexForDeposit,
+            _toParamIndexForWithdraw,
             _amountParamIndexForWithdraw,
             _idParamIndexForWithdraw
         );
@@ -120,9 +128,13 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
     */
     function deposit(address _token, bytes calldata _data) external whenNotPaused nonReentrant {
         Token memory registeredToken = registeredTokens[_token];
-        
+
         require(registeredToken.active, "Vault: token not active");
         require(_token != address(0), "Vault: token address cannot be zero");
+        require(
+            msg.sender == _decodeAddressFromData(_data, registeredToken.fromParamIndexForDeposit), 
+            "Vault: only owner can deposit"
+        );
         require(_data.length >= 4, "Vault: data must contain a function selector");
         require(_verifyFunctionSignature(registeredToken.depositFunctionSignature, _data), "Vault: invalid signature");
 
@@ -130,7 +142,7 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
         require(success, _getRevertMsg(returnData));
 
         if (registeredToken.hasAmount && !registeredToken.hasId) {
-            uint256 amount = _decodeAmount(_data, registeredToken.amountParamIndexForDeposit);
+            uint256 amount = _decodeUintFromData(_data, registeredToken.amountParamIndexForDeposit);
 
             userTokenBalances[_token][msg.sender] += amount;
 
@@ -138,7 +150,7 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
         }
 
         if (!registeredToken.hasAmount && registeredToken.hasId) {
-            uint256 id = _decodeId(_data, registeredToken.idParamIndexForDeposit);
+            uint256 id = _decodeUintFromData(_data, registeredToken.idParamIndexForDeposit);
 
             userOwnerOf[_token][id] = msg.sender;
 
@@ -146,8 +158,8 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
         }
 
         if (registeredToken.hasAmount && registeredToken.hasId) {
-            uint256 amount = _decodeAmount(_data, registeredToken.amountParamIndexForDeposit);
-            uint256 id = _decodeId(_data, registeredToken.idParamIndexForDeposit);
+            uint256 amount = _decodeUintFromData(_data, registeredToken.amountParamIndexForDeposit);
+            uint256 id = _decodeUintFromData(_data, registeredToken.idParamIndexForDeposit);
 
             userTokenBalances[_token][msg.sender] += amount;
             userOwnerOfBalance[_token][id][msg.sender] += amount;
@@ -168,29 +180,36 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
 
         require(registeredToken.active, "Vault: token not active");
         require(_token != address(0), "Vault: token address cannot be zero");
+        require(
+            msg.sender == _decodeAddressFromData(_data, registeredToken.toParamIndexForWithdraw), 
+            "Vault: withdraw to not owner is forbidden"
+        );
         require(_data.length >= 4, "Vault: data must contain a function selector");
-        require(_verifyFunctionSignature(registeredToken.withdrawFunctionSignature, _data), "Vault: invalid signature");
+        require(
+            _verifyFunctionSignature(registeredToken.withdrawFunctionSignature, _data), 
+            "Vault: invalid signature"
+        );
 
         uint256 amount = 0;
         uint256 id = 0;
 
         if (registeredToken.hasAmount && !registeredToken.hasId) {
-            amount = _decodeAmount(_data, registeredToken.amountParamIndexForWithdraw);
+            amount = _decodeUintFromData(_data, registeredToken.amountParamIndexForWithdraw);
             require(userTokenBalances[_token][msg.sender] >= amount, "Vault: insufficient balance");
 
             userTokenBalances[_token][msg.sender] -= amount;
         }
 
         if (!registeredToken.hasAmount && registeredToken.hasId) {
-            id = _decodeId(_data, registeredToken.idParamIndexForWithdraw);
+            id = _decodeUintFromData(_data, registeredToken.idParamIndexForWithdraw);
             require(userOwnerOf[_token][id] == msg.sender, "Vault: not the owner of the token ID");
 
             userOwnerOf[_token][id] = address(0);
         }
 
         if (registeredToken.hasAmount && registeredToken.hasId) {
-            amount = _decodeAmount(_data, registeredToken.amountParamIndexForWithdraw);
-            id = _decodeId(_data, registeredToken.idParamIndexForWithdraw);
+            amount = _decodeUintFromData(_data, registeredToken.amountParamIndexForWithdraw);
+            id = _decodeUintFromData(_data, registeredToken.idParamIndexForWithdraw);
             require(userOwnerOfBalance[_token][id][msg.sender] >= amount, "Vault: insufficient balance for token ID");
 
             userOwnerOfBalance[_token][id][msg.sender] -= amount;
@@ -251,43 +270,43 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
     }
 
     /**
-    * @notice Helper function to decode the amount from the function call data
+    * @notice Helper function to decode address data from the function call data
     * @param _data The encoded function call data
-    * @param _paramIndex The index of the amount parameter
-    * @return The decoded amount
+    * @param _paramIndex The index of the parameter
+    * @return The decoded address
     */
-    function _decodeAmount(bytes calldata _data, uint8 _paramIndex) private pure returns (uint256) {
-        require(_paramIndex < 6, "Vault: parameter index out of range");
+    function _decodeAddressFromData(bytes calldata _data, uint8 _paramIndex) private pure returns (address) {
+        require(_paramIndex < 8, "Vault: parameter index out of range");
     
-        uint256 amount;
+        address decodedAddress;
         
         assembly {
             let offset := add(_data.offset, 0x04)
             offset := add(offset, mul(_paramIndex, 0x20))
-            amount := calldataload(offset)
+            decodedAddress := calldataload(offset)
         }
     
-        return amount;
+        return decodedAddress;
     }
 
     /**
-    * @notice Helper function to decode the ID from the function call data
+    * @notice Helper function to decode the uint256 (amount or ID) from the function call data
     * @param _data The encoded function call data
-    * @param _paramIndex The index of the ID parameter
-    * @return The decoded ID
+    * @param _paramIndex The index of the parameter
+    * @return The decoded uint256
     */
-    function _decodeId(bytes calldata _data, uint8 _paramIndex) private pure returns (uint256) {
-        require(_paramIndex < 6, "Vault: parameter index out of range");
+    function _decodeUintFromData(bytes calldata _data, uint8 _paramIndex) private pure returns (uint256) {
+        require(_paramIndex < 8, "Vault: parameter index out of range");
 
-        uint256 id;
+        uint256 decodedUnit;
         
         assembly {
             let offset := add(_data.offset, 0x04)
             offset := add(offset, mul(_paramIndex, 0x20))
-            id := calldataload(offset)
+            decodedUnit := calldataload(offset)
         }
 
-        return id;
+        return decodedUnit;
     }
 
     /**
