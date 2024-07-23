@@ -10,14 +10,17 @@ UniversalTokenVault is a versatile smart contract that allows users to deposit a
 
 ## 📚 Table of Contents
 
-- [Overview](#overview)
-- [Features](#features)
-- [Security Features](#security-features)
-- [Getting Started](#getting-started)
-- [Smart Contract Structure](#smart-contract-structure)
-- [Running Tests](#running-tests)
-- [Usage](#usage)
-- [Scripts](#scripts)
+- [Overview](#🌟-overview)
+- [Features](#✨-features)
+- [Security Features](#🛡️-security-features)
+- [Limitations](#🚫-limitations)
+- [Getting Started](#🚀-getting-started)
+- [Smart Contract Structure](#📜-smart-contract-structure)
+- [Running Tests](#🧪-running-tests)
+- [Usage](#🧐-usage)
+- [Scripts](#👨‍💻-scripts)
+- [Findings](#🕵-findings)
+- [Alternative Approach](#🛣-alternative-approach)
 - [License](#license)
 
 ## 🌟 Overview
@@ -35,10 +38,20 @@ UniversalTokenVault is designed to handle various token standards with custom fu
 - **ReentrancyGuard:** Prevents reentrancy attacks.
 - **Pausable:** Allows the contract to be paused in case of emergencies.
 - **Ownable:** Restricts certain functions to the contract owner.
-- **Function Signature Verification:** Ensures that the registered token functions are correctly called.
-- **Safe Deposit**: Validates and decodes the `msg.sender` and the address used in field `from` to only allow deposits from owner.
-- **Safe Withdraw**: Validates and decodes the `msg.sender` and the address used in field `to` to only allow withdraws to owner.
+- **Function Signature Verification:** Ensures that the registered token functions for deposits and withdraws are correctly called.
+- **Safe Deposit**: Validates and decodes the address used in field `from` to only allow deposits from owner and the address used in field `to` to only allow deposits to vault.
+- **Safe Withdraw**: Validates and decodes the address used in field `to` to only allow withdraws to owner and the address used in field `from` to only allow withdeaws from vault.
 - **Amount and/or Id Verification:** Validates and decodes the `amount` and `id` parameters for deposits and withdrawals.
+
+## 🚫 Limitations
+
+While the `UniversalTokenVault` contract offers significant flexibility and security, it also has some limitations:
+
+- **Complexity in Registration**: The process of registering different types of tokens with varying function signatures and parameter indices can be complex and error-prone.
+- **Gas Efficiency**: The additional checks and decoding processes may lead to higher gas consumption, especially for complex token transactions.
+- **Custom Token Functions**: Support for custom token functions requires precise configuration and testing to ensure compatibility and security.
+- **Single Contract Limitations**: Managing multiple token standards within a single contract may lead to challenges in maintenance and upgrades.
+- **Three tokens patters**: This contract is only able to handle tokens that have some similiarities with the three major tokens patterns (fungilble, non-fungible and semi-fungible).
 
 ## 🚀 Getting Started
 
@@ -70,15 +83,17 @@ UniversalTokenVault is designed to handle various token standards with custom fu
 
 ### Token Activation and Deactivation
 
-- `activateToken(address _token, bool _hasAmount, bool _hasId, bytes4 _depositFunctionSignature, bytes4 _withdrawFunctionSignature, uint8 _fromParamIndexForDeposit, uint8 _amountParamIndexForDeposit, uint8 _idParamIndexForDeposit, uint8 _toParamIndexForWithdraw, uint8 _amountParamIndexForWithdraw, uint8 _idParamIndexForWithdraw)`: Registers a token in the vault with specific parameters.
+- `activateToken(address _token, bool _hasAmount, bool _hasId, bytes4 _depositFunctionSignature, bytes4 _withdrawFunctionSignature, uint8 _fromParamIndexForDeposit, uint8 _toParamIndexForDeposit, uint8 _amountParamIndexForDeposit, uint8 _idParamIndexForDeposit, uint8 _fromParamIndexForWithdraw, uint8 _toParamIndexForWithdraw, uint8 _amountParamIndexForWithdraw, uint8 _idParamIndexForWithdraw)`: Registers a token in the vault with specific parameters.
   - `_token`: The address of the token to be activated.
   - `_hasAmount`: Indicates if the token has an amount parameter.
   - `_hasId`: Indicates if the token has an ID parameter.
   - `_depositFunctionSignature`: The function signature for deposit.
   - `_withdrawFunctionSignature`: The function signature for withdrawal.
   - `_fromParamIndexForDeposit`: The index of the from parameter for deposit.
+  - `_toParamIndexForDeposit`: The index of the from parameter for deposit.
   - `_amountParamIndexForDeposit`: The index of the amount parameter for deposit.
   - `_idParamIndexForDeposit`: The index of the ID parameter for deposit.
+  - `_fromParamIndexForWithdraw`: The index of the to parameter for withdrawal.
   - `_toParamIndexForWithdraw`: The index of the to parameter for withdrawal.
   - `_amountParamIndexForWithdraw`: The index of the amount parameter for withdrawal.
   - `_idParamIndexForWithdraw`: The index of the ID parameter for withdrawal.
@@ -157,6 +172,77 @@ forge script script/Deposit.s.sol --rpc-url chain-rpc-url --private-key your-pri
 ```sh
 forge script script/Withdraw.s.sol --rpc-url chain-rpc-url --private-key your-private-key --sig "run(address,address,address,address)" <vaultAddress> <erc20Address> <erc721Address> <erc1155Address> --broadcast
 ```
+
+## 🕵 Findings
+
+During the development and testing of the `UniversalTokenVault` contract, the following issues and considerations were identified:
+
+### **ERC20 Withdrawal Mechanism**:
+
+- **Issue**: The initial approach using transfer function for ERC20 rely on verify from address and transferFrom withdrawals required an allowance, even though the contract was the owner.
+- **Solution**: Modified the approach to ensure withdrawals are handled correctly without relying on withdraw for ERC20 tokens.
+
+### **ERC1155 Token Handling**:
+
+- **Issue**: The contract initially lacked support for handling ERC1155 tokens.
+- **Solution**: Added `onERC1155Received` and `onERC1155BatchReceived` functions to handle the receipt of ERC1155 tokens.
+
+### **Generic Token Handling**:
+
+- **Issue**: The need to support various token standards (ERC20, ERC721, ERC1155) and custom tokens introduced complexity in function signatures and parameter indices.
+- **Solution**: Implemented a flexible system to register tokens with customizable deposit and withdrawal function signatures and parameter indices.
+
+### **Security Checks**:
+
+- **Issue**: Ensuring deposits and withdrawals are only executed with the correct from and to addresses.
+- **Solution**: Added checks to verify that tokens are deposited to the vault and withdrawn by the rightful owner.
+
+### **Function Signature Verification**:
+
+- **Issue**: Ensuring that the provided calldata matches the registered function signatures.
+- **Solution**: Implemented a helper function _verifyFunctionSignature to compare stored signatures with calldata selectors.
+
+### **Parameter Decoding**:
+
+- **Issue**: Correctly decoding addresses and uint256 parameters from the calldata for deposits and withdrawals.
+- **Solution**: Added helper functions _decodeAddressFromData and _decodeUintFromData for accurate decoding based on parameter indices.
+
+### **Struct Token Parameters**:
+
+- **Issue**: The `Token` struct has a large number of parameters, which can lead to complexity in managing and registering tokens.
+- **Solution**: While this is a current limitation, future iterations could look into optimizing or simplifying the struct parameters to reduce complexity.
+
+### **Security Issues Related to Calldata**:
+
+- **Issue**: Calldata can be manipulated by users, which might lead to vulnerabilities if not properly validated. The contract relies on decoding calldata to extract parameters, and if the calldata format is incorrect, it could result in unexpected behaviors.
+- **Solution**: Implement strict validation checks and require precise encoding to mitigate risks associated with incorrect or malicious calldata.
+
+### **Use of Assembly Code**:
+
+- **Issue**: The contract uses low-level assembly code for decoding calldata and verifying function signatures. While assembly can be efficient, it can also introduce risks such as security vulnerabilities and maintenance challenges.
+- **Solution**: Ensure thorough testing and review of the assembly code.
+
+## 🛣 Alternative Approach
+
+An alternative approach to managing multiple token types within a single vault is to use a router contract along with separate vault contracts for each token type. This approach can provide a more modular and scalable solution:
+
+### Router Contract
+
+A router contract can be used to interface with different vault contracts based on the token type. It would route deposit and withdrawal requests to the appropriate vault contract.
+
+### Vault Contracts
+
+Each vault contract would be specialized for a specific token standard (e.g., ERC20Vault, ERC721Vault, ERC1155Vault). These contracts would implement the token-specific logic for deposits and withdrawals.
+
+### Unified Interface
+
+A unified interface can be provided to users through the router contract, allowing them to interact with different vaults seamlessly. The router contract would handle the logic for determining which vault to use based on the token type.
+
+### Benefits
+
+- Modularity: Separate vault contracts for each token type make the system more modular and easier to maintain.
+- Scalability: Adding support for new token standards is simpler, as it only requires deploying a new vault contract and updating the router.
+- Gas Efficiency: Token-specific vault contracts can be optimized for their respective token standards, potentially reducing gas costs.
 
 ## 📄 License
 
