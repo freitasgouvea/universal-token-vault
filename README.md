@@ -10,18 +10,18 @@ UniversalTokenVault is a versatile smart contract that allows users to deposit a
 
 ## 📚 Table of Contents
 
-- [Overview](#🌟-overview)
-- [Features](#✨-features)
-- [Security Features](#🛡️-security-features)
-- [Limitations](#🚫-limitations)
-- [Getting Started](#🚀-getting-started)
-- [Smart Contract Structure](#📜-smart-contract-structure)
-- [Running Tests](#🧪-running-tests)
-- [Usage](#🧐-usage)
-- [Scripts](#👨‍💻-scripts)
-- [Findings](#🕵-findings)
-- [Alternative Approach](#🛣-alternative-approach)
-- [License](#license)
+- [Overview](#-overview)
+- [Features](#-features)
+- [Security Features](#-security-features)
+- [Limitations](#-limitations)
+- [Getting Started](#-getting-started)
+- [Smart Contract Structure](#-smart-contract-structure)
+- [Running Tests](#-running-tests)
+- [Usage](#-usage)
+- [Scripts](#-scripts)
+- [Findings](#-findings)
+- [Alternative Approach](#-alternative-approach)
+- [License](#-license)
 
 ## 🌟 Overview
 
