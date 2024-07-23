@@ -51,7 +51,7 @@ While the `UniversalTokenVault` contract offers significant flexibility and secu
 - **Gas Efficiency**: The additional checks and decoding processes may lead to higher gas consumption, especially for complex token transactions.
 - **Custom Token Functions**: Support for custom token functions requires precise configuration and testing to ensure compatibility and security.
 - **Single Contract Limitations**: Managing multiple token standards within a single contract may lead to challenges in maintenance and upgrades.
-- **Three tokens patters**: This contract is only able to handle tokens that have some similiarities with the three major tokens patterns (fungilble, non-fungible and semi-fungible).
+- **Three tokens patterns**: This contract is only able to handle tokens that have some similarities with the three common tokens patterns (fungilble, non-fungible and semi-fungible) and uses function that had `from`, `to`, `amount` and/or `id` as parameters.
 
 ## 🚀 Getting Started
 
@@ -72,7 +72,7 @@ While the `UniversalTokenVault` contract offers significant flexibility and secu
 2. Compile the contracts:
 
    ```sh
-   forge build
+   forge build --via-ir
    ```
 
 ## 📜 Smart Contract Structure
@@ -111,6 +111,7 @@ While the `UniversalTokenVault` contract offers significant flexibility and secu
 - `_decodeAmount(bytes calldata _data, uint8 _paramIndex)`: Decodes the amount parameter from the provided data based on the specified parameter index.
 - `_decodeId(bytes calldata _data, uint8 _paramIndex)`: Decodes the ID parameter from the provided data based on the specified parameter index.
 - `_getRevertMsg(bytes memory _returnData)`: Extracts the revert reason from the return data of a failed call.
+- `_isERC20(address _token)`: Check if a given address is an ERC20 token to not apply `from` parameter verification in withdraw.
 
 ### View Functions
 
@@ -129,12 +130,12 @@ These functions are implemented to allow the vault to receive ERC1155 tokens dir
 
 1. Compile the smart contract:
     ```bash
-    forge build
+    forge build --via-ir
     ```
 
 2. Run tests:
     ```bash
-    forge test
+    forge test -vvvv --via-ir
     ```
     
 ## 🧐 Usage
@@ -179,7 +180,7 @@ During the development and testing of the `UniversalTokenVault` contract, the fo
 
 ### **ERC20 Withdrawal Mechanism**:
 
-- **Issue**: The initial approach using transfer function for ERC20 rely on verify from address and transferFrom withdrawals required an allowance, even though the contract was the owner.
+- **Issue**: The initial approach using transfer function for ERC20 rely on verify from address (not present) and transferFrom withdrawals required an allowance, even though the contract was the owner.
 - **Solution**: Modified the approach to ensure withdrawals are handled correctly without relying on withdraw for ERC20 tokens.
 
 ### **ERC1155 Token Handling**:
