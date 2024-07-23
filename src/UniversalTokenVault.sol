@@ -20,8 +20,10 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
         bytes4 depositFunctionSignature;
         bytes4 withdrawFunctionSignature;
         uint8 fromParamIndexForDeposit;
+        uint8 toParamIndexForDeposit;
         uint8 amountParamIndexForDeposit;
         uint8 idParamIndexForDeposit;
+        uint8 fromParamIndexForWithdraw;
         uint8 toParamIndexForWithdraw;
         uint8 amountParamIndexForWithdraw;
         uint8 idParamIndexForWithdraw;
@@ -68,8 +70,10 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
     * @param _depositFunctionSignature The function signature for deposit
     * @param _withdrawFunctionSignature The function signature for withdraw
     * @param _fromParamIndexForDeposit The index of the from parameter for deposit
+    * @param _toParamIndexForDeposit The index of the to parameter for deposit
     * @param _amountParamIndexForDeposit The index of the amount parameter for deposit
     * @param _idParamIndexForDeposit The index of the ID parameter for deposit
+    * @param _fromParamIndexForWithdraw The index of the to parameter for withdraw
     * @param _toParamIndexForWithdraw The index of the to parameter for withdraw
     * @param _amountParamIndexForWithdraw The index of the amount parameter for withdraw
     * @param _idParamIndexForWithdraw The index of the ID parameter for withdraw
@@ -81,8 +85,10 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
         bytes4 _depositFunctionSignature,
         bytes4 _withdrawFunctionSignature,
         uint8 _fromParamIndexForDeposit,
+        uint8 _toParamIndexForDeposit,
         uint8 _amountParamIndexForDeposit,
         uint8 _idParamIndexForDeposit,
+        uint8 _fromParamIndexForWithdraw,
         uint8 _toParamIndexForWithdraw,
         uint8 _amountParamIndexForWithdraw,
         uint8 _idParamIndexForWithdraw
@@ -98,8 +104,10 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
             _depositFunctionSignature,
             _withdrawFunctionSignature,
             _fromParamIndexForDeposit,
+            _toParamIndexForDeposit,
             _amountParamIndexForDeposit,
             _idParamIndexForDeposit,
+            _fromParamIndexForWithdraw,
             _toParamIndexForWithdraw,
             _amountParamIndexForWithdraw,
             _idParamIndexForWithdraw
@@ -131,6 +139,10 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
 
         require(registeredToken.active, "Vault: token not active");
         require(_token != address(0), "Vault: token address cannot be zero");
+        require(
+            address(this) == _decodeAddressFromData(_data, registeredToken.toParamIndexForDeposit), 
+            "Vault: only deposit to valut is accepted"
+        );
         require(
             msg.sender == _decodeAddressFromData(_data, registeredToken.fromParamIndexForDeposit), 
             "Vault: only owner can deposit"
@@ -183,6 +195,10 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
         require(
             msg.sender == _decodeAddressFromData(_data, registeredToken.toParamIndexForWithdraw), 
             "Vault: withdraw to not owner is forbidden"
+        );
+        require(
+            address(this) == _decodeAddressFromData(_data, registeredToken.fromParamIndexForWithdraw), 
+            "Vault: only withdraw from valut is accepted"
         );
         require(_data.length >= 4, "Vault: data must contain a function selector");
         require(
