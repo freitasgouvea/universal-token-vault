@@ -23,7 +23,7 @@ contract Withdraw is Script {
         ERC1155Test erc1155 = ERC1155Test(erc1155Address);
 
         // Withdraw ERC20
-        bytes memory dataERC20 = abi.encodeWithSelector(ERC20Test(erc20Address).transfer.selector, msg.sender, 100000);
+        bytes memory dataERC20 = abi.encodeWithSelector(ERC20Test(erc20Address).transfer.selector, vaultAddress, msg.sender, 100000);
         vault.withdraw(address(erc20), dataERC20);
 
         // Withdraw ERC721
