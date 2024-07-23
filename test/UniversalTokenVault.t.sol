@@ -37,14 +37,14 @@ contract UniversalTokenVaultTest is Test, Events {
             true, // hasAmount
             false, // hasId
             erc20.transferFrom.selector, // deposit function signature
-            erc20.transferFrom.selector, // withdraw function signature
+            erc20.transfer.selector, // withdraw function signature
             0, // from parameter index for deposit 
             1, // to parameter index for deposit 
             2, // amount parameter index for deposit
             0, // id parameter index for deposit (not used)
-            0, // from parameter index for withdraw
-            1, // to parameter index for withdraw 
-            2, // amount parameter index for withdraw
+            0, // from parameter index for withdraw (not used)
+            0, // to parameter index for withdraw 
+            1, // amount parameter index for withdraw
             0  // id parameter index for withdraw (not used)
         );
 
@@ -166,8 +166,7 @@ contract UniversalTokenVaultTest is Test, Events {
 
         // Withdraw ERC20
         bytes memory dataERC20 = abi.encodeWithSelector(
-            erc20.transferFrom.selector, 
-            address(vault),
+            erc20.transfer.selector, 
             address(alice), 
             amount
         );
