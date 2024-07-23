@@ -5,6 +5,7 @@ pragma solidity ^0.8.20;
 import {Ownable} from "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 import {Pausable} from "../lib/openzeppelin-contracts/contracts/utils/Pausable.sol";
 import {ReentrancyGuard} from "../lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
+import {IERC20} from "../lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 
 /**
 * @title UniversalTokenVault contract
@@ -189,17 +190,21 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
     */
     function withdraw(address _token, bytes calldata _data) external whenNotPaused nonReentrant {
         Token memory registeredToken = registeredTokens[_token];
-
         require(registeredToken.active, "Vault: token not active");
         require(_token != address(0), "Vault: token address cannot be zero");
         require(
             msg.sender == _decodeAddressFromData(_data, registeredToken.toParamIndexForWithdraw), 
             "Vault: withdraw to not owner is forbidden"
         );
-        require(
-            address(this) == _decodeAddressFromData(_data, registeredToken.fromParamIndexForWithdraw), 
-            "Vault: only withdraw from valut is accepted"
-        );
+
+        bool isTokenErc20 = _isERC20(_token);
+        if (!isTokenErc20) {
+            require(
+                address(this) == _decodeAddressFromData(_data, registeredToken.fromParamIndexForWithdraw), 
+                "Vault: only withdraw from valut is accepted"
+            );
+        }
+
         require(_data.length >= 4, "Vault: data must contain a function selector");
         require(
             _verifyFunctionSignature(registeredToken.withdrawFunctionSignature, _data), 
@@ -337,6 +342,23 @@ contract UniversalTokenVault is Ownable, Pausable, ReentrancyGuard {
             _returnData := add(_returnData, 0x04)
         }
         return abi.decode(_returnData, (string));
+    }
+
+     /**
+     * @notice Check if a given address is an ERC20 token
+     * @param _token The address to check
+     * @return bool True if the address implements ERC20, false otherwise
+     */
+    function _isERC20(address _token) public view returns (bool) {
+        try IERC20(_token).balanceOf(address(this)) returns (uint256) {
+            try IERC20(_token).allowance(address(0), address(0)) returns (uint256) {
+                return true;
+            } catch {
+                return false;
+            }
+        } catch {
+            return false;
+        }
     }
 
     /**
