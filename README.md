@@ -102,8 +102,8 @@ While the `UniversalTokenVault` contract offers significant flexibility and secu
 
 ### Deposit and Withdraw
 
-- `deposit(address _token, bytes calldata _data)`: Allows users to deposit registered tokens into the vault. The function decodes the provided data to extract the amount and/or ID parameters as needed, updates the user's balance, and calls the specified deposit function on the token contract.
-- `withdraw(address _token, bytes calldata _data)`: Allows users to withdraw tokens from the vault. The function decodes the provided data to extract the amount and/or ID parameters, checks the user's balance, updates the balance, and calls the specified withdraw function on the token contract.
+- `deposit(address _token, bytes calldata _data)`: Allows users to deposit registered tokens into the vault. The function decodes the provided data to extract the amount and/or ID parameters as needed and the addresses from and to, updates the user's balance, and calls the specified deposit function on the token contract.
+- `withdraw(address _token, bytes calldata _data)`: Allows users to withdraw tokens from the vault. The function decodes the provided data to extract the amount and/or ID parameters and the addresses from and to, checks the user's balance, updates the balance, and calls the specified withdraw function on the token contract.
 
 ### Helper Functions
 
@@ -227,17 +227,11 @@ During the development and testing of the `UniversalTokenVault` contract, the fo
 
 An alternative approach to managing multiple token types within a single vault is to use a router contract along with separate vault contracts for each token type. This approach can provide a more modular and scalable solution:
 
-### Router Contract
+- **Router Contract**: A router contract can be used to interface with different vault contracts based on the token type. It would route deposit and withdrawal requests to the appropriate vault contract.
 
-A router contract can be used to interface with different vault contracts based on the token type. It would route deposit and withdrawal requests to the appropriate vault contract.
+- **Vault Contracts**: Each vault contract would be specialized for a specific token standard (e.g., ERC20Vault, ERC721Vault, ERC1155Vault). These contracts would implement the token-specific logic for deposits and withdrawals.
 
-### Vault Contracts
-
-Each vault contract would be specialized for a specific token standard (e.g., ERC20Vault, ERC721Vault, ERC1155Vault). These contracts would implement the token-specific logic for deposits and withdrawals.
-
-### Unified Interface
-
-A unified interface can be provided to users through the router contract, allowing them to interact with different vaults seamlessly. The router contract would handle the logic for determining which vault to use based on the token type.
+- **Unified Interface**: A unified interface can be provided to users through the router contract, allowing them to interact with different vaults seamlessly. The router contract would handle the logic for determining which vault to use based on the token type.
 
 ### Benefits
 
